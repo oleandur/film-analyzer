@@ -44,6 +44,10 @@ class VideoAnalyzer:
             capture.release()
 
         statistics = self._calculate_shot_statistics(shots)
+        editing_pace = self._calculate_editing_pace(
+            shots,
+            video_info["duration"]
+        )
 
         return {
             "video": {
@@ -51,6 +55,7 @@ class VideoAnalyzer:
                 **video_info
             },
             "statistics": statistics,
+            "editing_pace": editing_pace,
             "shots": shots
         }
 
@@ -116,4 +121,55 @@ class VideoAnalyzer:
             "shortest_shot_duration": min(durations),
             "longest_shot_duration": max(durations)
         }
+    def _calculate_editing_pace(
+        self,
+        shots: list[dict],
+        video_duration: float
+    ) -> dict:
+        if video_duration <= 0:
+            return {}
+
+        segment_duration = video_duration / 3
+
+        segments = {
+            "beginning": [],
+            "middle": [],
+            "ending": []
+        }
+
+        for shot in shots:
+            midpoint = (shot["start"] + shot["end"]) / 2
+
+            if midpoint < segment_duration:
+                segments["beginning"].append(shot)
+            elif midpoint < segment_duration * 2:
+                segments["middle"].append(shot)
+            else:
+                segments["ending"].append(shot)
+
+        result = {}
+
+        for name, segment_shots in segments.items():
+            durations = [
+                shot["duration"]
+                for shot in segment_shots
+            ]
+
+            shot_count = len(segment_shots)
+
+            result[name] = {
+                "shot_count": shot_count,
+                "average_shot_duration": (
+                    sum(durations) / shot_count
+                    if shot_count
+                    else 0
+                ),
+                "shots_per_minute": (
+                    shot_count / segment_duration * 60
+                    if segment_duration
+                    else 0
+                )
+            }
+
+        return result
 
