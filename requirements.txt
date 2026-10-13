@@ -1,0 +1,6 @@
+opencv-python
+scenedetect
+numpy
+Pillow
+torch
+open-clip-torch
