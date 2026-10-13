@@ -7,7 +7,7 @@ from video_analyzer import VideoAnalyzer
 video_path = sys.argv[1]
 
 analyzer = VideoAnalyzer(video_path)
-analysis = analyzer.analyze()
+analysis = analyzer.analyze(output_dir="data/output")
 
 output_directory = Path("data/output")
 output_directory.mkdir(parents=True, exist_ok=True)
