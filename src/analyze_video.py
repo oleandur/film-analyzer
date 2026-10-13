@@ -1,10 +1,20 @@
-from scenedetect import detect, ContentDetector 
+import json
+import sys
+from pathlib import Path
 
-VIDEO_PATH = "data/input/House.mp4"
+from video_analyzer import VideoAnalyzer
 
-scenes = detect(VIDEO_PATH, ContentDetector(), show_progress=True)
+video_path = sys.argv[1]
 
-for i, (start, end) in enumerate(scenes, start=1):
-    print(f'Shot {i}: {start.get_timecode()} -> {end.get_timecode()}')
+analyzer = VideoAnalyzer(video_path)
+analysis = analyzer.analyze()
 
-    
+output_directory = Path("data/output")
+output_directory.mkdir(parents=True, exist_ok=True)
+
+output_path = output_directory / "analysis.json"
+
+with open(output_path, "w", encoding="utf-8") as file:
+    json.dump(analysis, file, indent=2)
+
+print(f"Analysis saved to {output_path}")
