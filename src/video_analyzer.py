@@ -3,9 +3,12 @@ from pathlib import Path
 import cv2
 from scenedetect import detect, ContentDetector
 
+from visual_analyzer import VisualAnalyzer
+
 class VideoAnalyzer:
     def __init__(self, video_path: str):
         self.video_path = Path(video_path)
+        self.visual_analyzer = VisualAnalyzer()
 
     def analyze(self, output_dir: str | Path = "data/output") -> dict:
         output_dir = Path(output_dir)
@@ -25,20 +28,28 @@ class VideoAnalyzer:
                 start_seconds = start.get_seconds()
                 end_seconds = end.get_seconds()
 
-                thumbnail = self._extract_thumbnail(
+                frame = self._extract_midpoint_frame(
                     capture=capture,
                     shot_id=index,
                     start_seconds=start_seconds,
-                    end_seconds=end_seconds,
+                    end_seconds=end_seconds
+                )
+
+                thumbnail = self._save_thumbnail(
+                    frame=frame,
+                    shot_id = index,
                     output_dir=output_dir
                 )
+
+                visual = self.visual_analyzer.analyze_frame(frame)
 
                 shots.append({
                     "id": index,
                     "start": start_seconds,
                     "end": end_seconds,
                     "duration": end_seconds - start_seconds,
-                    "thumbnail": thumbnail
+                    "thumbnail": thumbnail,
+                    "visual": visual
                 })
         finally:
             capture.release()
@@ -104,6 +115,35 @@ class VideoAnalyzer:
 
         return str(Path("shots") / filename)
 
+    def _extract_midpoint_frame(self, capture: cv2.VideoCapture, shot_id: int, start_seconds:float, end_seconds:float,):
+        midpoint= (start_seconds + end_seconds) / 2
+
+        capture.set(cv2.CAP_PROP_POS_MSEC, midpoint*1000)
+
+        success, frame = capture.read()
+
+        if not success:
+            raise RuntimeError(f"Could not extract frame for shot {shot_id}")
+
+        return frame
+
+    def _save_thumbnail(self, frame, shot_id: int, output_dir: Path) -> str:
+        shots_dir =output_dir / "shots"
+
+        shots_dir.mkdir(parents=True, exist_ok=True)
+
+        filename = f"shot_{shot_id:03d}.jpg"
+
+        thumbnail_path = shots_dir/filename
+
+        success = cv2.imwrite(str(thumbnail_path), frame)
+
+        if not success:
+            raise RuntimeError(f"Could not save thumbnail for shot {shot_id}")
+
+        return str(Path("shots") / filename)
+
+    # Stats
     def _calculate_shot_statistics(self, shots: list[dict]) -> dict:
         if not shots:
             return {
@@ -121,6 +161,8 @@ class VideoAnalyzer:
             "shortest_shot_duration": min(durations),
             "longest_shot_duration": max(durations)
         }
+
+    # Pace
     def _calculate_editing_pace(
         self,
         shots: list[dict],
