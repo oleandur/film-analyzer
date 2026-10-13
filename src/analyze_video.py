@@ -1,6 +1,6 @@
 from scenedetect import detect, ContentDetector 
 
-VIDEO_PATH = "data/input/test.mp4"
+VIDEO_PATH = "data/input/House.mp4"
 
 scenes = detect(VIDEO_PATH, ContentDetector(), show_progress=True)
 
