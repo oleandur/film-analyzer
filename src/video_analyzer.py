@@ -43,11 +43,14 @@ class VideoAnalyzer:
         finally:
             capture.release()
 
+        statistics = self._calculate_shot_statistics(shots)
+
         return {
             "video": {
                 "filename": self.video_path.name,
                 **video_info
             },
+            "statistics": statistics,
             "shots": shots
         }
 
@@ -96,4 +99,21 @@ class VideoAnalyzer:
 
         return str(Path("shots") / filename)
 
+    def _calculate_shot_statistics(self, shots: list[dict]) -> dict:
+        if not shots:
+            return {
+                "shot_count": 0,
+                "average_shot_duration": 0,
+                "shortest_shot_duration": 0,
+                "longest_shot_duration": 0
+            }
+
+        durations = [shot["duration"] for shot in shots]
+
+        return {
+            "shot_count": len(shots),
+            "average_shot_duration": sum(durations) / len(durations),
+            "shortest_shot_duration": min(durations),
+            "longest_shot_duration": max(durations)
+        }
 
